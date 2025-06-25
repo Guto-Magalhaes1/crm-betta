@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>CRM Betta</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 0; background: #f0f2f5; }
+    #login-container, #crm-container { display: none; padding: 20px; }
+    #login-container.active, #crm-container.active { display: block; }
+
+    h1 { text-align: center; }
+    .login-box { max-width: 300px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    input[type="password"] { width: 100%; padding: 10px; margin-top: 10px; }
+    button { padding: 10px 15px; background: #003366; color: #fff; border: none; cursor: pointer; margin-top: 10px; width: 100%; }
+    button:hover { background: #005599; }
+
+    .board { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
+    .column { background: #fff; border-radius: 8px; padding: 10px; width: 300px; min-height: 300px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .column h2 { text-align: center; }
+    .task { background: #d9eaff; margin: 10px 0; padding: 10px; border-radius: 4px; cursor: grab; }
+
+    #new-task { margin: 20px auto; max-width: 400px; display: flex; gap: 10px; }
+    #new-task input { flex: 1; padding: 10px; }
+    #new-task button { flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<div id="login-container" class="active">
+  <div class="login-box">
+    <h1>Login</h1>
+    <input type="password" id="password" placeholder="Digite a senha">
+    <button onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<div id="crm-container">
+  <h1>CRM Betta</h1>
+  <div id="new-task">
+    <input type="text" id="taskInput" placeholder="Nova tarefa">
+    <button onclick="addTask()">Adicionar</button>
+  </div>
+  <div class="board">
+    <div class="column" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="todo">
+      <h2>A Fazer</h2>
+    </div>
+    <div class="column" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="doing">
+      <h2>Em Andamento</h2>
+    </div>
+    <div class="column" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="done">
+      <h2>Concluído</h2>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SENHA = "Betta123";
+
+  function login() {
+    const pass = document.getElementById('password').value;
+    if (pass === SENHA) {
+      document.getElementById('login-container').classList.remove('active');
+      document.getElementById('crm-container').classList.add('active');
+      loadTasks();
+    } else {
+      alert("Senha incorreta!");
+    }
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+
+  function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+  }
+
+  function drop(ev) {
+    ev.preventDefault();
+    const data = ev.dataTransfer.getData("text");
+    const task = document.getElementById(data);
+    ev.target.closest('.column').appendChild(task);
+    saveTasks();
+  }
+
+  function addTask() {
+    const input = document.getElementById('taskInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const task = createTaskElement(text);
+    document.querySelector('[data-status="todo"]').appendChild(task);
+    input.value = "";
+    saveTasks();
+  }
+
+  function createTaskElement(text) {
+    const task = document.createElement('div');
+    task.className = 'task';
+    task.draggable = true;
+    task.ondragstart = drag;
+    task.id = "task-" + Date.now();
+    task.textContent = text;
+    return task;
+  }
+
+  function saveTasks() {
+    const tasks = { todo: [], doing: [], done: [] };
+    document.querySelectorAll('.column').forEach(col => {
+      const status = col.dataset.status;
+      col.querySelectorAll('.task').forEach(task => {
+        tasks[status].push(task.textContent);
+      });
+    });
+    localStorage.setItem('crmTasks', JSON.stringify(tasks));
+  }
+
+  function loadTasks() {
+    const data = JSON.parse(localStorage.getItem('crmTasks'));
+    if (!data) return;
+    for (let status in data) {
+      const column = document.querySelector(`[data-status="${status}"]`);
+      data[status].forEach(text => {
+        const task = createTaskElement(text);
+        column.appendChild(task);
+      });
+    }
+  }
+</script>
+
+</body>
+</html>
